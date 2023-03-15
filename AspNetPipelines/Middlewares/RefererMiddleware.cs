@@ -12,7 +12,7 @@ namespace AspNetPipelines.Api.Middlewares
             {
                 if (context.Request.Headers["Referer"].ToString() != "https://some-cool-app.com")
                 {
-                    await next();
+                    await next(); 
                 }
                 else
                 {

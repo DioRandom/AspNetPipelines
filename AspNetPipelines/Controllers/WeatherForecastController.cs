@@ -1,3 +1,9 @@
+using AspNetPipelines.Api.DataAccess;
+using AspNetPipelines.Api.Extegions;
+using AspNetPipelines.Api.TestData;
+using AspNetPipelines.Core.Enums;
+using AspNetPipelines.Core.Extensions;
+using AspNetPipelines.Core.Types;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AspNetPipelines.Controllers
@@ -6,55 +12,29 @@ namespace AspNetPipelines.Controllers
     [Route("[controller]")]
     public class WeatherForecastController : ControllerBase
     {
-        private static readonly string[] Summaries = new[]
-        {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
-
+        private readonly IRepository<WeatherForecast> _repository;
         private readonly ILogger<WeatherForecastController> _logger;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+        public WeatherForecastController(ILogger<WeatherForecastController> logger,
+            IRepository<WeatherForecast> repository)
         {
             _logger = logger;
+            _repository = repository;
         }
-
-        public enum Units
-        {
-            Celsius,
-            Fahrenheit
-        }
-
-
-
         [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> GetWeatherForecast(string city, int days = 3, Units unit = Units.Celsius)
+        public IEnumerable<WeatherForecast> GetWeatherForecast(string city, int days = 3, TemperatureUnits unit = TemperatureUnits.Celsius)
         {
-            return Enumerable.Range(0, days).Select(index => new WeatherForecast
-            {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            var weatherEntries = _repository.GetAll<WeatherForecast>()
+                .Where(x => x.City == city)
+                .Take(days)
+                .Select(entry => 
+                {
+                    entry.UnitValue[TemperatureUnits.Fahrenheit] = entry.UnitValue[TemperatureUnits.Celsius].ToFahrenheit();
 
-                //  TemperatureC = Random.Shared.Next(-20, 55),
-                
-                Temp = new Dictionary<string, int> { { unit.ToString(), unit == Units.Celsius ?
-                                                            Random.Shared.Next(-20, 55) :
-                                                            (Random.Shared.Next(-20, 55) * 9 / 5 + 32) } },
+                    return entry;
+                });
 
-
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)],
-
-                City = city,
-
-            })
-            .ToArray();
-
-
-
+            return weatherEntries;
         }
-
-       
-
-
-
-
     }
 }
